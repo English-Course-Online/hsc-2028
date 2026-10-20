@@ -12,17 +12,16 @@
         .timer { background: #fee2e2; color: #991b1b; font-weight: bold; font-size: 14px; padding: 4px 12px; border-radius: 20px; }
         .instruction { font-size: 14px; color: #64748b; margin-bottom: 20px; }
         
-        /* Drag and Drop List Styling */
         .sortable-list { list-style: none; padding: 0; margin: 0 0 24px 0; }
-        .sortable-item { background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; cursor: grab; user-select: none; }
-        .sortable-item:active { cursor: grabbing; background: #f8fafc; }
-        .handle { color: #94a3b8; font-weight: bold; margin-right: 12px; font-size: 18px; }
+        .sortable-item { background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; cursor: grab; user-select: none; touch-action: none; }
+        .sortable-item.dragging { opacity: 0.5; background: #eff6ff; border-color: #3b82f6; }
+        .handle { color: #94a3b8; font-weight: bold; margin-right: 12px; font-size: 18px; cursor: move; }
         .text { font-size: 15px; color: #334155; }
         
         button { background: #2563eb; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: 600; border-radius: 6px; cursor: pointer; width: 100%; transition: background 0.2s; }
         button:hover { background: #1d4ed8; }
         #result { margin-top: 16px; padding: 12px; border-radius: 6px; display: none; font-weight: bold; text-align: center; }
-        .success { background: #dcfce7; color: #166534; }
+        .success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
     </style>
 </head>
 <body>
@@ -32,63 +31,79 @@
         <h2>Rajshahi Board – 2023</h2>
         <div class="timer">10:00</div>
     </div>
-    <div class="instruction">Tap & drag the handle (≡) to arrange the sentences. Press submit when complete.</div>
+    <div class="instruction">Tap/Click & drag the handle (≡) to arrange the sentences. Press submit when complete.</div>
     
-    <!-- এই লিস্টের ভেতরেই বাক্যগুলো দেখা যাবে -->
-    <ul class="sortable-list" id="sentenceList">
-        <!-- জাভাস্ক্রিপ্ট দিয়ে বাক্যগুলো নিচে স্বয়ংক্রিয়ভাবে লোড হবে -->
-    </ul>
+    <ul class="sortable-list" id="sentenceList"></ul>
 
     <button onclick="checkAnswer()">Submit Answer</button>
     <div id="result"></div>
 </div>
 
 <script>
-    // রাজশাহী বোর্ড ২০২৩ এর এলোমেলো করা বাক্যগুলো
-    const sentences = [
-        { id: 1, text: "Once upon a time a fox lived in a dense forest." },
-        { id: 2, text: "One day he felt very hungry and walked around looking for food." },
-        { id: 3, text: "He searched for food everywhere but did not get any." },
-        { id: 4, text: "At last, he entered into a vineyard." },
-        { id: 5, text: "There were ripe grapes hanging up on the vine." },
-        { id: 6, text: "The grapes were too high for the fox to reach." },
-        { id: 7, text: "He took a run and jumped to reach the bunch of grapes." },
-        { id: 8, text: "But he could not reach the bunch." },
-        { id: 9, text: "Again and again he jumped but failed each time." },
-        { id: 10, text: "At last, he went away saying that the grapes were sour." }
+    // আসল সঠিক ক্রম অনুসারে বাক্যগুলোর তালিকা
+    const originalSentences = [
+        "Once upon a time a fox lived in a dense forest.",
+        "One day he felt very hungry and walked around looking for food.",
+        "He searched for food everywhere but did not get any.",
+        "At last, he entered into a vineyard.",
+        "There were ripe grapes hanging up on the vine.",
+        "The grapes were too high for the fox to reach.",
+        "He took a run and jumped to reach the bunch of grapes.",
+        "But he could not reach the bunch.",
+        "Again and again he jumped but failed each time.",
+        "At last, he went away saying that the grapes were sour."
     ];
 
-    // বাক্যগুলোকে স্ক্রিনে দেখানোর ফাংশন
     const listContainer = document.getElementById('sentenceList');
     
-    // শিক্ষার্থীদের জন্য পরীক্ষার শুরুতে বাক্যগুলো এলোমেলো (Shuffle) করে দেখানোর নিয়ম
-    const shuffled = [...sentences].sort(() => Math.random() - 0.5);
+    // মিক্সড বা এলোমেলো করার লজিক
+    let shuffledSentences = [...originalSentences].sort(() => Math.random() - 0.5);
 
-    shuffled.forEach(item => {
+    // স্ক্রিনে বাক্যগুলো তৈরি করা
+    shuffledSentences.forEach(text => {
         const li = document.createElement('li');
         li.className = 'sortable-item';
         li.draggable = true;
-        li.setAttribute('data-id', item.id);
-        li.innerHTML = `<span class="handle">≡</span><span class="text">${item.text}</span>`;
+        li.innerHTML = `<span class="handle">≡</span><span class="text">${text}</span>`;
         
-        // Drag and drop event listeners
+        // মাউস দিয়ে ড্র্যাগ করার ইভেন্ট
         li.addEventListener('dragstart', () => li.classList.add('dragging'));
         li.addEventListener('dragend', () => li.classList.remove('dragging'));
+        
+        // মোবাইল/টাচ স্ক্রিনের জন্য ড্র্যাগ ইভেন্ট
+        li.addEventListener('touchstart', (e) => {
+            li.classList.add('dragging');
+        }, {passive: true});
+        li.addEventListener('touchend', () => li.classList.remove('dragging'));
         
         listContainer.appendChild(li);
     });
 
-    // ড্র্যাগ অ্যান্ড ড্রপ লজিক
+    // ড্র্যাগ করে পজিশন বদলানোর লজিক
     listContainer.addEventListener('dragover', e => {
         e.preventDefault();
-        const afterElement = getDragAfterElement(listContainer, e.clientY);
         const dragging = document.querySelector('.dragging');
+        const afterElement = getDragAfterElement(listContainer, e.clientY);
         if (afterElement == null) {
             listContainer.appendChild(dragging);
         } else {
             listContainer.insertBefore(dragging, afterElement);
         }
     });
+
+    // মোবাইল টাচ মুভমেন্ট হ্যান্ডেল করার লজিক
+    listContainer.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const dragging = document.querySelector('.dragging');
+        if (!dragging) return;
+        const afterElement = getDragAfterElement(listContainer, touch.clientY);
+        if (afterElement == null) {
+            listContainer.appendChild(dragging);
+        } else {
+            listContainer.insertBefore(dragging, afterElement);
+        }
+    }, {passive: false});
 
     function getDragAfterElement(container, y) {
         const draggableElements = [...container.querySelectorAll('.sortable-item:not(.dragging)')];
@@ -103,19 +118,22 @@
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    // উত্তর যাচাই করার ফাংশন
+    // চূড়ান্ত উত্তর এবং স্কোর মেলানোর ফাংশন (১০০% নির্ভুল)
     function checkAnswer() {
-        const currentOrder = [...listContainer.querySelectorAll('.sortable-item')].map(li => parseInt(li.getAttribute('data-id')));
+        const currentItems = [...listContainer.querySelectorAll('.text')];
         let correctCount = 0;
         
-        currentOrder.forEach((id, index) => {
-            if(id === index + 1) correctCount++;
+        currentItems.forEach((item, index) => {
+            // শিক্ষার্থীর সাজানো বাক্যের টেক্সটের সাথে আসল সঠিক বাক্যের টেক্সট মেলানো হচ্ছে
+            if(item.innerText.trim() === originalSentences[index].trim()) {
+                correctCount++;
+            }
         });
 
         const resultDiv = document.getElementById('result');
         resultDiv.style.display = "block";
         resultDiv.className = "success";
-        resultDiv.innerText = `You correctly placed ${correctCount} out of 10 sentences!`;
+        resultDiv.innerText = `Result: ${correctCount} / 10 sentences are correct!`;
     }
 </script>
 
